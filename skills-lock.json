@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "wechat-sticker-cover": {
+      "source": "local",
+      "sourceType": "project",
+      "skillPath": ".agents/skills/wechat-sticker-cover/SKILL.md"
+    }
+  }
+}
