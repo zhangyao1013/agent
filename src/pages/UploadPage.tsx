@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { SEED_PROJECTS } from "../data/seedNews";
 import { APP_LABELS, parseTags } from "../lib/labels";
-import { addReview, resetMarqueeDismissed } from "../lib/storage";
-import type { AppId, MediaAsset, ReviewReport } from "../types";
+import { addReview, loadProjects, resetMarqueeDismissed } from "../lib/storage";
+import type {
+  AppId,
+  MediaAsset,
+  ProjectId,
+  ReviewReport,
+} from "../types";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -15,12 +21,23 @@ function readFileAsDataUrl(file: File): Promise<string> {
 
 export function UploadPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const projects = loadProjects(SEED_PROJECTS);
+  const projectIds = projects.map((p) => p.id);
+  const initialProject = (params.get("project") as ProjectId | null) &&
+    projectIds.includes(params.get("project") as ProjectId)
+    ? (params.get("project") as ProjectId)
+    : projectIds[0];
+
   const [title, setTitle] = useState("");
   const [tagsInput, setTagsInput] = useState("#激励Widget");
   const [conclusion, setConclusion] = useState("");
   const [body, setBody] = useState("");
   const [docLink, setDocLink] = useState("");
-  const [competitor, setCompetitor] = useState<AppId>("pdd");
+  const [projectId, setProjectId] = useState<ProjectId>(initialProject);
+  const [competitor, setCompetitor] = useState<AppId>(
+    projects.find((p) => p.id === initialProject)?.primaryCompetitor ?? "pdd",
+  );
   const [author, setAuthor] = useState("");
   const [reportFile, setReportFile] = useState<File | null>(null);
   const [media, setMedia] = useState<MediaAsset[]>([]);
@@ -60,6 +77,7 @@ export function UploadPage() {
 
       const report: ReviewReport = {
         id: `r-${Date.now()}`,
+        projectId,
         title: title.trim(),
         tags: parseTags(tagsInput),
         conclusion: conclusion.trim(),
@@ -101,6 +119,27 @@ export function UploadPage() {
             placeholder="例：拼多多 618 激励任务链路评测"
             required
           />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="project">评测项目 *</label>
+          <select
+            id="project"
+            value={projectId}
+            onChange={(e) => {
+              const newId = e.target.value as ProjectId;
+              setProjectId(newId);
+              const p = projects.find((x) => x.id === newId);
+              if (p) setCompetitor(p.primaryCompetitor);
+            }}
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <p className="form-hint">报告将归属到所选项目下展示。</p>
         </div>
 
         <div className="form-group">
